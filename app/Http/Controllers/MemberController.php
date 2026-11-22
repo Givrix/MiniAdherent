@@ -23,11 +23,21 @@ class MemberController extends Controller
             ->orderBy('firstname')
             ->limit(5);
 
+        $hasFilter = false;
         foreach (['firstname', 'lastname', 'pseudo', 'company', 'email'] as $field) {
             $value = trim((string) $request->query($field, ''));
             if ($value !== '') {
                 $query->where($field, 'like', "%{$value}%");
+                $hasFilter = true;
             }
+        }
+
+        if (! $hasFilter) {
+            if (! auth()->check()) {
+                return response()->json([]);
+            }
+
+            $query->whereNull('subscription_date');
         }
 
         $members = $query->get();

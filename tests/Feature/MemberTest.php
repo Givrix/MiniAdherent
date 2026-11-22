@@ -49,6 +49,8 @@ class MemberTest extends TestCase
             ->assertJsonPath('0.email', 'j**n@e*****e.org')
             ->assertJsonPath('0.subscription_end', '2027-05-01');
 
+        $this->getJson('/api/members')->assertOk()->assertJsonCount(0);
+
         $member = Member::query()->where('lastname', 'DUPONT')->first();
         $this->getJson("/api/members/{$member->id}")
             ->assertOk()
@@ -269,6 +271,20 @@ class MemberTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1)
             ->assertJsonPath('0.company', 'Asso Exemple');
+    }
+
+    public function test_empty_search_lists_members_without_a_subscription_date(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Member::create(['morphy' => 'phy', 'firstname' => 'En', 'lastname' => 'ATTENTE', 'email' => 'en@exemple.org']);
+        Member::create(['morphy' => 'phy', 'firstname' => 'Jean', 'lastname' => 'DUPONT', 'subscription_date' => '2026-03-15', 'subscription_end' => '2027-03-14']);
+
+        $this->getJson('/api/members')
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.lastname', 'ATTENTE');
     }
 
     public function test_search_is_limited_to_five_results(): void

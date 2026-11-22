@@ -327,13 +327,8 @@ async function refreshList() {
     if (form[field].trim() !== '') params.set(field, form[field].trim());
   }
 
-  if (params.size === 0) {
-    members.value = [];
-    current.value = null;
-    return;
-  }
-
-  members.value = await fetchJson(`/api/members?${params.toString()}`);
+  const query = params.toString();
+  members.value = await fetchJson(`/api/members${query ? `?${query}` : ''}`);
   current.value = null;
 }
 

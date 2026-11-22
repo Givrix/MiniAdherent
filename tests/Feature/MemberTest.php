@@ -80,7 +80,7 @@ class MemberTest extends TestCase
             ->assertJsonPath('pseudo', 'freenode42');
     }
 
-    public function test_it_requires_an_email(): void
+    public function test_email_is_optional(): void
     {
         $user = User::factory()->create();
         $this->actingAs($user);
@@ -90,7 +90,24 @@ class MemberTest extends TestCase
             'firstname' => 'Jean',
             'lastname' => 'Dupont',
             'subscription_date' => '2026-03-15',
-        ])->assertJsonValidationErrors(['email']);
+        ])->assertCreated()
+            ->assertJsonPath('email', null);
+    }
+
+    public function test_created_at_matches_the_subscription_date_on_creation(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $this->postJson('/api/members', [
+            'morphy' => 'phy',
+            'pseudo' => 'blendax',
+            'email' => 'blendax@exemple.org',
+            'subscription_date' => '2026-03-15',
+        ])->assertCreated();
+
+        $member = Member::latest('id')->first();
+        $this->assertSame('2026-03-15 00:00:00', $member->created_at->format('Y-m-d H:i:s'));
     }
 
     public function test_it_rejects_future_subscription_dates_and_invalid_emails(): void

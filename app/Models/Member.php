@@ -15,6 +15,7 @@ class Member extends Model
         'email',
         'subscription_date',
         'subscription_end',
+        'created_at',
     ];
 
     protected function casts(): array

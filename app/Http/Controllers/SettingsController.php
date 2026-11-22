@@ -148,12 +148,6 @@ class SettingsController extends Controller
                 continue;
             }
 
-            if ($memberData['email'] === '') {
-                $errors[] = "Ligne {$line} : email requis.";
-
-                continue;
-            }
-
             if (! filter_var($memberData['email'], FILTER_VALIDATE_EMAIL)) {
                 $errors[] = "Ligne {$line} : email invalide.";
 
@@ -194,6 +188,10 @@ class SettingsController extends Controller
                 $existing->update($attributes);
                 $updated++;
             } else {
+                if ($subscriptionDate !== null) {
+                    $attributes['created_at'] = $subscriptionDate->toDateTimeString();
+                }
+
                 Member::create($attributes);
                 $created++;
             }

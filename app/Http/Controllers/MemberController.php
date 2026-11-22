@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Member;
 use App\Services\SubscriptionPeriod;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -38,6 +39,7 @@ class MemberController extends Controller
 
         if (! empty($data['subscription_date'])) {
             $data['subscription_end'] = SubscriptionPeriod::computeEnd($data['subscription_date']);
+            $data['created_at'] = Carbon::parse($data['subscription_date']);
         }
 
         $member = Member::create($data);
@@ -84,13 +86,12 @@ class MemberController extends Controller
             'lastname' => ['nullable', 'string', 'max:190'],
             'pseudo' => ['nullable', 'string', 'max:190'],
             'company' => ['nullable', 'string', 'max:190', 'required_if:morphy,mor'],
-            'email' => ['required', 'email:rfc', 'max:190'],
+            'email' => ['nullable', 'email:rfc', 'max:190'],
             'subscription_date' => ['nullable', 'date', 'before_or_equal:today'],
         ], [
             'morphy.required' => 'La nature de l’adhérent est obligatoire.',
             'morphy.in' => 'La nature de l’adhérent est invalide.',
             'company.required_if' => 'La raison sociale est obligatoire pour un adhérent moral.',
-            'email.required' => 'L’adresse email est obligatoire.',
             'email.email' => 'L’adresse email est invalide.',
             'subscription_date.date' => 'La date d’adhésion est invalide.',
             'subscription_date.before_or_equal' => 'La date d’adhésion ne peut pas être dans le futur.',

@@ -245,7 +245,7 @@ const isValid = computed(() => {
     form.morphy === 'phy'
       ? (form.firstname.length > 0 && form.lastname.length > 0) || form.pseudo.length > 0
       : form.company.length > 0;
-  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email);
+  const emailOk = form.email === '' || /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email);
   return identityOk && emailOk && form.subscription_date !== '';
 });
 

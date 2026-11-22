@@ -13,7 +13,10 @@
             <span class="text-lg font-semibold text-slate-900">{{ config('app.name', 'MiniAdherent') }}</span>
             @auth
                 <div class="flex items-center gap-3">
-                    <a href="{{ route('settings.edit') }}" class="text-sm text-slate-600 transition hover:text-slate-900">Paramètres</a>
+                    <a href="{{ route('home') }}"
+                       class="text-sm transition {{ request()->routeIs('home') ? 'font-semibold text-indigo-700' : 'text-slate-600 hover:text-slate-900' }}">Saisie</a>
+                    <a href="{{ route('settings.edit') }}"
+                       class="text-sm transition {{ request()->routeIs('settings.edit') ? 'font-semibold text-indigo-700' : 'text-slate-600 hover:text-slate-900' }}">Paramètres</a>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-600 transition hover:bg-slate-50">

@@ -58,7 +58,6 @@
                     <button type="submit" class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700">
                         Enregistrer
                     </button>
-                    <a href="{{ route('home') }}" class="text-sm text-slate-500 hover:text-slate-700">Retour à la saisie</a>
                 </div>
             </form>
         </section>

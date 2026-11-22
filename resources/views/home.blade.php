@@ -1,5 +1,5 @@
 @extends('layouts.app')
 
 @section('content')
-    <div id="app"></div>
+    <div id="app" data-subscription-mode="{{ \App\Services\SubscriptionPeriod::mode() }}"></div>
 @endsection

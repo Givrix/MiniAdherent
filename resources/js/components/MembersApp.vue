@@ -81,7 +81,7 @@
           <p v-if="errors.email" class="mt-1 text-sm text-red-600">{{ errors.email[0] }}</p>
         </div>
 
-        <label v-if="editMode" class="flex w-fit items-center gap-2 text-sm text-slate-600">
+        <label v-if="editMode && subscriptionMode === 'floating'" class="flex w-fit items-center gap-2 text-sm text-slate-600">
           <input type="checkbox" v-model="renewal" class="rounded border-slate-300 text-indigo-600" />
           Reporter la fin d’adhésion depuis la période en cours (réadhésion)
         </label>
@@ -193,6 +193,7 @@
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+const subscriptionMode = document.getElementById('app')?.dataset.subscriptionMode || 'floating';
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -228,12 +229,21 @@ const isValid = computed(() => {
   return identityOk && emailOk && form.subscription_date !== '';
 });
 
-const computedEnd = computed(() => {
-  if (form.subscription_date === '') return '';
-  const date = new Date(form.subscription_date);
+function subscriptionEndDate(value) {
+  const date = new Date(value);
+  if (subscriptionMode === 'fixed') {
+    const end = new Date(date.getFullYear(), 6, 31);
+    if (date >= end) end.setFullYear(end.getFullYear() + 1);
+    return end;
+  }
   date.setFullYear(date.getFullYear() + 1);
   date.setDate(date.getDate() - 1);
-  return formatShort(date.toISOString().slice(0, 10));
+  return date;
+}
+
+const computedEnd = computed(() => {
+  if (form.subscription_date === '') return '';
+  return formatShort(subscriptionEndDate(form.subscription_date).toISOString().slice(0, 10));
 });
 
 function memberDisplay(member) {

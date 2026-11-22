@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
-use Carbon\Carbon;
+use App\Services\SubscriptionPeriod;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -36,7 +36,7 @@ class MemberController extends Controller
         $data = $this->validated($request);
 
         if (! empty($data['subscription_date'])) {
-            $data['subscription_end'] = Carbon::parse($data['subscription_date'])->addYear();
+            $data['subscription_end'] = SubscriptionPeriod::computeEnd($data['subscription_date']);
         }
 
         $member = Member::create($data);
@@ -54,13 +54,11 @@ class MemberController extends Controller
         $data = $this->validated($request);
 
         if (! empty($data['subscription_date'])) {
-            $start = Carbon::parse($data['subscription_date']);
-
-            if ($request->boolean('renewal') && $member->subscription_end?->gt($start)) {
-                $start = $member->subscription_end;
-            }
-
-            $data['subscription_end'] = $start->copy()->addYear();
+            $data['subscription_end'] = SubscriptionPeriod::computeEnd(
+                $data['subscription_date'],
+                $member->subscription_end,
+                $request->boolean('renewal'),
+            );
         } else {
             $data['subscription_end'] = null;
         }

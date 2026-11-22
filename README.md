@@ -3,7 +3,10 @@
 ## Fonctionnalités
 
 - Saisie simplifiée d'un adhérent : personne physique ou morale (prénom, nom, société, email) et date d'adhésion.
-- Calcul automatique de la fin d'adhésion (date d'adhésion + 1 an) et gestion des réadhésions (report de la période en cours).
+- Deux modes de fin d'adhésion, paramétrables par le gestionnaire (page Paramètres) :
+  - **date flottante** (défaut) : date d'adhésion + 1 an, réadhésion reportée depuis la période en cours ;
+  - **période fixe annuelle** : fin au 31 juillet suivant la date d'adhésion.
+- Import / export CSV des membres (upsert par email, séparateur auto-détecté, UTF-8, dates AAAA-MM-JJ).
 - Recherche en direct des adhérents au fil de la saisie pour éviter les doublons.
 - Fiche adhérent, édition et suppression.
 - Aucune gestion de montant ni de paiement : les cotisations sont saisies directement dans Dolibarr.
@@ -57,6 +60,15 @@ php artisan serve  # http://localhost:8000
 
 `npm run dev` doit rester actif pendant le développement : sans lui et sans build
 préalable, les pages renvoient l'exception `ViteManifestNotFoundException`.
+
+## Paramètres et CSV
+
+La page **Paramètres** (lien en haut à droite, réservée à la session connectée) permet de basculer entre
+les deux modes de calcul et d'importer/exporter les membres :
+- export : `GET /members/export` (colonnes `morphy;firstname;lastname;company;email;subscription_date;subscription_end`) ;
+- import : `POST /members/import` (mêmes colonnes ; connexion par email → mise à jour si existant, sinon création ; les lignes en erreur sont signalées sans bloquer le reste).
+
+Le changement de mode s'applique aux adhésions saisies après la bascule ; les dates déjà enregistrées ne sont pas recalculées.
 
 ## Dépannage
 

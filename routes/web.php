@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\SessionController;
+use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -13,6 +14,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [SessionController::class, 'destroy'])->name('logout');
 
     Route::get('/', [MemberController::class, 'page'])->name('home');
+
+    Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
+    Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::get('/members/export', [SettingsController::class, 'exportMembers'])->name('members.export');
+    Route::post('/members/import', [SettingsController::class, 'importMembers'])->name('members.import');
 
     Route::prefix('api/members')->group(function () {
         Route::get('/', [MemberController::class, 'search'])->name('members.search');

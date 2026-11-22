@@ -22,6 +22,7 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('api/members')->group(function () {
         Route::get('/', [MemberController::class, 'search'])->name('members.search');
+        Route::get('/exists', [MemberController::class, 'exists'])->name('members.exists');
         Route::post('/', [MemberController::class, 'store'])->name('members.store');
         Route::get('/{member}', [MemberController::class, 'show'])->name('members.show');
         Route::put('/{member}', [MemberController::class, 'update'])->name('members.update');

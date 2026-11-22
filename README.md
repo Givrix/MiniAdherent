@@ -12,6 +12,7 @@
     adhésion **à partir** de la date de bascule → fin de période de l'année suivante.
 - Import / export CSV des membres (upsert par email, séparateur auto-détecté, UTF-8, dates AAAA-MM-JJ).
 - Recherche en direct des adhérents au fil de la saisie pour éviter les doublons.
+- Blocage des doublons à la création comme à l'édition : pseudo identique refusé quand l'identité repose sur le pseudo seul (prénom et nom vides), email identique refusé (comparaison insensible à la casse). Un tip ambre « Membre déjà existant » s'affiche sous les champs concernés au fil de la saisie.
 - Fiche adhérent, édition et suppression.
 - Aucune gestion de montant ni de paiement : les cotisations sont saisies directement dans Dolibarr.
 

@@ -110,6 +110,97 @@ class MemberTest extends TestCase
         $this->assertSame('2026-03-15 00:00:00', $member->created_at->format('Y-m-d H:i:s'));
     }
 
+    public function test_it_blocks_creation_when_a_pseudo_only_identity_already_exists(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Member::create(['morphy' => 'phy', 'pseudo' => 'blendax', 'email' => 'blendax@exemple.org', 'subscription_date' => '2026-03-15', 'subscription_end' => '2027-03-14']);
+
+        $this->postJson('/api/members', [
+            'morphy' => 'phy',
+            'pseudo' => 'Blendax',
+            'email' => 'autre@exemple.org',
+            'subscription_date' => '2026-03-15',
+        ])->assertJsonValidationErrors(['pseudo'])
+            ->assertJsonFragment(['Membre déjà existant (pseudo).']);
+
+        $this->assertDatabaseCount('members', 1);
+
+        $this->postJson('/api/members', [
+            'morphy' => 'phy',
+            'firstname' => 'Jean',
+            'lastname' => 'Dupont',
+            'pseudo' => 'Blendax',
+            'subscription_date' => '2026-03-15',
+        ])->assertCreated();
+    }
+
+    public function test_it_blocks_creation_when_the_email_already_exists(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Member::create(['morphy' => 'phy', 'firstname' => 'Jean', 'lastname' => 'DUPONT', 'email' => 'jean@exemple.org', 'subscription_date' => '2026-03-15', 'subscription_end' => '2027-03-14']);
+
+        $this->postJson('/api/members', [
+            'morphy' => 'phy',
+            'firstname' => 'Autre',
+            'lastname' => 'Personne',
+            'email' => 'Jean@exemple.org',
+            'subscription_date' => '2026-03-15',
+        ])->assertJsonValidationErrors(['email'])
+            ->assertJsonFragment(['Membre déjà existant (email).']);
+
+        $this->assertDatabaseCount('members', 1);
+    }
+
+    public function test_update_ignores_the_current_member_for_duplicate_checks(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $member = Member::create(['morphy' => 'phy', 'firstname' => 'Jean', 'lastname' => 'DUPONT', 'email' => 'jean@exemple.org', 'subscription_date' => '2026-03-15', 'subscription_end' => '2027-03-14']);
+
+        $this->putJson("/api/members/{$member->id}", [
+            'morphy' => 'phy',
+            'firstname' => 'Jean',
+            'lastname' => 'DUPONT',
+            'email' => 'jean@exemple.org',
+            'subscription_date' => '2026-03-15',
+        ])->assertOk();
+
+        Member::create(['morphy' => 'phy', 'firstname' => 'Marie', 'lastname' => 'MARTIN', 'email' => 'marie@exemple.org', 'subscription_date' => '2026-03-15', 'subscription_end' => '2027-03-14']);
+
+        $this->putJson("/api/members/{$member->id}", [
+            'morphy' => 'phy',
+            'firstname' => 'Jean',
+            'lastname' => 'DUPONT',
+            'email' => 'marie@exemple.org',
+            'subscription_date' => '2026-03-15',
+        ])->assertJsonValidationErrors(['email']);
+    }
+
+    public function test_the_exists_endpoint_requires_authentication_and_reports_duplicates(): void
+    {
+        $this->getJson('/api/members/exists?email=jean@exemple.org')->assertUnauthorized();
+
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $member = Member::create(['morphy' => 'phy', 'pseudo' => 'blendax', 'email' => 'blendax@exemple.org', 'subscription_date' => '2026-03-15', 'subscription_end' => '2027-03-14']);
+
+        $this->getJson('/api/members/exists?pseudo=Blendax&email=blendax@exemple.org')
+            ->assertOk()
+            ->assertJsonPath('pseudo_exists', true)
+            ->assertJsonPath('email_exists', true);
+
+        $this->getJson("/api/members/exists?pseudo=blendax&email=blendax@exemple.org&ignore={$member->id}")
+            ->assertOk()
+            ->assertJsonPath('pseudo_exists', false)
+            ->assertJsonPath('email_exists', false);
+    }
+
     public function test_it_rejects_future_subscription_dates_and_invalid_emails(): void
     {
         $user = User::factory()->create();

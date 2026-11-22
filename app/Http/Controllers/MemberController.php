@@ -37,6 +37,8 @@ class MemberController extends Controller
     {
         $data = $this->validated($request);
 
+        $this->rejectDuplicates($data, null);
+
         if (! empty($data['subscription_date'])) {
             $data['subscription_end'] = SubscriptionPeriod::computeEnd($data['subscription_date']);
             $data['created_at'] = Carbon::parse($data['subscription_date']);
@@ -47,6 +49,14 @@ class MemberController extends Controller
         return response()->json($member, 201);
     }
 
+    public function exists(Request $request): JsonResponse
+    {
+        return response()->json([
+            'pseudo_exists' => $this->pseudoExists($request->query('pseudo'), (int) $request->query('ignore', 0)),
+            'email_exists' => $this->emailExists($request->query('email'), (int) $request->query('ignore', 0)),
+        ]);
+    }
+
     public function show(Member $member): JsonResponse
     {
         return response()->json($member);
@@ -55,6 +65,8 @@ class MemberController extends Controller
     public function update(Request $request, Member $member): JsonResponse
     {
         $data = $this->validated($request);
+
+        $this->rejectDuplicates($data, $member->id);
 
         if (! empty($data['subscription_date'])) {
             $data['subscription_end'] = SubscriptionPeriod::computeEnd(
@@ -76,6 +88,41 @@ class MemberController extends Controller
         $member->delete();
 
         return response()->json(null, 204);
+    }
+
+    private function rejectDuplicates(array $data, ?int $ignoreId): void
+    {
+        $nameOnlyIdentity = $data['morphy'] === 'phy'
+            && blank($data['firstname'] ?? null)
+            && blank($data['lastname'] ?? null);
+
+        if ($nameOnlyIdentity && ! blank($data['pseudo'] ?? null) && $this->pseudoExists($data['pseudo'], $ignoreId)) {
+            throw ValidationException::withMessages([
+                'pseudo' => 'Membre déjà existant (pseudo).',
+            ]);
+        }
+
+        if (! blank($data['email'] ?? null) && $this->emailExists($data['email'], $ignoreId)) {
+            throw ValidationException::withMessages([
+                'email' => 'Membre déjà existant (email).',
+            ]);
+        }
+    }
+
+    private function pseudoExists(?string $pseudo, ?int $ignoreId): bool
+    {
+        return filled($pseudo) && Member::query()
+            ->whereRaw('LOWER(pseudo) = ?', [mb_strtolower(trim($pseudo))])
+            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+            ->exists();
+    }
+
+    private function emailExists(?string $email, ?int $ignoreId): bool
+    {
+        return filled($email) && Member::query()
+            ->whereRaw('LOWER(email) = ?', [mb_strtolower(trim($email))])
+            ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
+            ->exists();
     }
 
     private function validated(Request $request): array

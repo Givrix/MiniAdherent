@@ -67,7 +67,8 @@
             v-model.trim="form.pseudo"
             class="w-full max-w-xs rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
           />
-          <p v-if="errors.firstname" class="mt-1 text-sm text-red-600">{{ errors.firstname[0] }}</p>
+          <p v-if="errors.pseudo" class="mt-1 text-sm text-red-600">{{ errors.pseudo[0] }}</p>
+          <p v-if="pseudoTip" class="mt-1 text-sm text-amber-600">Membre déjà existant</p>
         </div>
 
         <div v-show="form.morphy === 'mor'">
@@ -90,6 +91,7 @@
             class="w-full max-w-xs rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
           />
           <p v-if="errors.email" class="mt-1 text-sm text-red-600">{{ errors.email[0] }}</p>
+          <p v-if="emailTip" class="mt-1 text-sm text-amber-600">Membre déjà existant</p>
         </div>
 
         <label v-if="editMode && subscriptionMode === 'floating'" class="flex w-fit items-center gap-2 text-sm text-slate-600">
@@ -235,6 +237,8 @@ const saving = ref(false);
 const errors = ref({});
 const members = ref([]);
 const current = ref(null);
+const pseudoTip = ref(false);
+const emailTip = ref(false);
 
 const subdate = ref(null);
 const firstname = ref(null);
@@ -246,7 +250,7 @@ const isValid = computed(() => {
       ? (form.firstname.length > 0 && form.lastname.length > 0) || form.pseudo.length > 0
       : form.company.length > 0;
   const emailOk = form.email === '' || /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email);
-  return identityOk && emailOk && form.subscription_date !== '';
+  return identityOk && emailOk && form.subscription_date !== '' && !pseudoTip.value && !emailTip.value;
 });
 
 function parseDayMonth(value) {
@@ -327,14 +331,35 @@ async function refreshList() {
   current.value = null;
 }
 
+async function checkDuplicates() {
+  const params = new URLSearchParams();
+  if (form.morphy === 'phy' && form.pseudo.trim() !== '') params.set('pseudo', form.pseudo.trim());
+  if (form.email.trim() !== '') params.set('email', form.email.trim());
+  if (form.id) params.set('ignore', String(form.id));
+
+  if (!params.has('pseudo') && !params.has('email')) {
+    pseudoTip.value = false;
+    emailTip.value = false;
+    return;
+  }
+
+  const result = await fetchJson(`/api/members/exists?${params.toString()}`);
+  pseudoTip.value = result.pseudo_exists && form.firstname === '' && form.lastname === '';
+  emailTip.value = result.email_exists;
+}
+
 let searchTimer;
 watch(
-  () => [form.firstname, form.lastname, form.company, form.email],
+  () => [form.firstname, form.lastname, form.pseudo, form.company, form.email],
   () => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
       refreshList().catch(() => {
         members.value = [];
+      });
+      checkDuplicates().catch(() => {
+        pseudoTip.value = false;
+        emailTip.value = false;
       });
     }, 250);
   },
@@ -409,6 +434,8 @@ async function resetForm() {
   submitted.value = false;
   editMode.value = false;
   errors.value = {};
+  pseudoTip.value = false;
+  emailTip.value = false;
   await refreshList().catch(() => {});
   focusFilling();
 }

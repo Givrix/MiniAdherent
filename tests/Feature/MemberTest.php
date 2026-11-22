@@ -235,6 +235,20 @@ class MemberTest extends TestCase
             ->assertJsonPath('0.company', 'Asso Exemple');
     }
 
+    public function test_search_is_limited_to_five_results(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        for ($i = 1; $i <= 6; $i++) {
+            Member::create(['morphy' => 'phy', 'firstname' => "S{$i}", 'lastname' => 'HOMONYME', 'subscription_date' => '2026-03-15', 'subscription_end' => '2027-03-14']);
+        }
+
+        $this->getJson('/api/members?lastname=homonyme')
+            ->assertOk()
+            ->assertJsonCount(5);
+    }
+
     public function test_it_updates_a_member(): void
     {
         $user = User::factory()->create();

@@ -21,7 +21,7 @@ class MemberController extends Controller
         $query = Member::query()
             ->orderBy('lastname')
             ->orderBy('firstname')
-            ->limit(10);
+            ->limit(5);
 
         foreach (['firstname', 'lastname', 'pseudo', 'company', 'email'] as $field) {
             $value = trim((string) $request->query($field, ''));

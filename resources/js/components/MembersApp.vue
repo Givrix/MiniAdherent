@@ -198,7 +198,8 @@ const subscriptionMode = appEl?.dataset.subscriptionMode || 'floating';
 const fixedPeriodEnd = appEl?.dataset.fixedPeriodEnd || '31/07';
 const fixedSwitchDate = appEl?.dataset.fixedSwitchDate || '01/06';
 
-const today = new Date().toISOString().slice(0, 10);
+const now = new Date();
+const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
 const defaultForm = () => ({
   id: null,
@@ -237,24 +238,32 @@ function parseDayMonth(value) {
   return { day, month: month - 1 };
 }
 
+function parseLocalDate(value) {
+  if (value instanceof Date) return value;
+
+  const [year, month, day] = String(value).slice(0, 10).split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 function subscriptionEndDate(value) {
-  const date = new Date(value);
+  const date = parseLocalDate(value);
+
   if (subscriptionMode === 'fixed') {
     const sw = parseDayMonth(fixedSwitchDate);
     const pe = parseDayMonth(fixedPeriodEnd);
-    const swThisYear = new Date(date.getFullYear(), sw.month, sw.day);
+    const afterSwitch = date >= new Date(date.getFullYear(), sw.month, sw.day);
 
-    return date < swThisYear
-      ? new Date(date.getFullYear(), pe.month, pe.day)
-      : new Date(date.getFullYear() + 1, pe.month, pe.day);
+    return afterSwitch
+      ? new Date(date.getFullYear() + 1, pe.month, pe.day)
+      : new Date(date.getFullYear(), pe.month, pe.day);
   }
-  date.setFullYear(date.getFullYear() + 1);
-  return date;
+
+  return new Date(date.getFullYear() + 1, date.getMonth(), date.getDate());
 }
 
 const computedEnd = computed(() => {
   if (form.subscription_date === '') return '';
-  return formatShort(subscriptionEndDate(form.subscription_date).toISOString().slice(0, 10));
+  return formatShort(subscriptionEndDate(form.subscription_date));
 });
 
 function memberDisplay(member) {
@@ -263,8 +272,7 @@ function memberDisplay(member) {
 }
 
 function formatShort(value) {
-  const date = value instanceof Date ? value : new Date(value);
-  return new Intl.DateTimeFormat('fr-FR').format(date);
+  return new Intl.DateTimeFormat('fr-FR').format(parseLocalDate(value));
 }
 
 async function fetchJson(url, options = {}) {

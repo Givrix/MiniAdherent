@@ -136,8 +136,8 @@ class SettingsTest extends TestCase
         $response->assertOk();
 
         $content = $response->streamedContent();
-        $this->assertStringContainsString('morphy;firstname;lastname;pseudo;company;email;subscription_date;subscription_end', $content);
-        $this->assertStringContainsString('phy;Jean;DUPONT;jojo;;jean@exemple.org;2026-03-15;2027-03-14', $content);
+        $this->assertStringContainsString('morphy;firstname;lastname;pseudo;company;email;created_at;subscription_end', $content);
+        $this->assertStringContainsString('phy;Jean;DUPONT;jojo;;jean@exemple.org;'.now()->toDateString().';2027-03-14', $content);
     }
 
     public function test_import_creates_updates_and_reports_errors(): void
@@ -148,28 +148,36 @@ class SettingsTest extends TestCase
         Member::create(['morphy' => 'phy', 'firstname' => 'Jean', 'lastname' => 'DUPONT', 'email' => 'jean@exemple.org']);
 
         $csv = implode("\n", [
-            'morphy;firstname;lastname;pseudo;company;email;subscription_date',
-            'phy;Jeanne;DUPONT;;;jean@exemple.org;2026-03-15',
-            'phy;Alice;WILSON;;;alice@exemple.org;2026-05-01',
-            'mor;;;;L electro;contact@lelectro.fr;',
-            'phy;;;;bob@exemple.org;2026-05-01',
-            'phy;Claire;NOEL;;;pas-un-email;2026-05-01',
-            'phy;;;blendax;;blendax@exemple.org;',
+            'morphy;firstname;lastname;pseudo;company;email;created_at;subscription_end',
+            'phy;Jeanne;DUPONT;;;jean@exemple.org;2026-03-15;2027-04-01',
+            'phy;Alice;WILSON;;;alice@exemple.org;;2027-05-01',
+            'mor;;;;L electro;contact@lelectro.fr;;',
+            'phy;;;;bob@exemple.org;2026-05-01;',
+            'phy;Claire;NOEL;;;pas-un-email;2026-05-01;2027-05-01',
+            'phy;;;blendax;;blendax@exemple.org;;',
+            'phy;Zoe;MARTIN;;;zoe@exemple.org;2026-05-01;',
         ]);
 
         $response = $this->post('/members/import', [
             'file' => UploadedFile::fake()->createWithContent('adherents.csv', $csv),
         ])->assertRedirect('/settings');
 
-        $response->assertSessionHas('import_created', 3);
+        $response->assertSessionHas('import_created', 4);
         $response->assertSessionHas('import_updated', 1);
-        $response->assertSessionHas('import_created', 3);
+        $response->assertSessionHas('import_created', 4);
         $response->assertSessionHas('import_updated', 1);
         $response->assertSessionHas('import_errors.0', 'Ligne 5 : prénom et nom requis, ou un pseudo.');
         $response->assertSessionHas('import_errors.1', 'Ligne 6 : email invalide.');
 
-        $this->assertDatabaseHas('members', ['email' => 'jean@exemple.org', 'firstname' => 'JEANNE', 'subscription_end' => '2027-03-15']);
+        $this->assertDatabaseHas('members', ['email' => 'jean@exemple.org', 'firstname' => 'JEANNE', 'subscription_date' => '2026-04-01', 'subscription_end' => '2027-04-01', 'created_at' => '2026-03-15 00:00:00']);
+        $this->assertDatabaseHas('members', ['email' => 'alice@exemple.org', 'subscription_date' => '2026-05-01', 'subscription_end' => '2027-05-01', 'created_at' => '2026-05-01 00:00:00']);
         $this->assertDatabaseHas('members', ['email' => 'contact@lelectro.fr', 'morphy' => 'mor', 'company' => 'L electro']);
+        $this->assertDatabaseMissing('members', ['email' => 'bob@exemple.org']);
+        $this->assertDatabaseHas('members', ['email' => 'zoe@exemple.org', 'subscription_date' => '2026-05-01', 'subscription_end' => '2027-05-01', 'created_at' => '2026-05-01 00:00:00']);
+        $blendax = Member::query()->where('email', 'blendax@exemple.org')->first();
+        $this->assertNotNull($blendax);
+        $this->assertNull($blendax->subscription_date);
+        $this->assertNull($blendax->subscription_end);
         $this->assertDatabaseMissing('members', ['email' => 'pas-un-email']);
     }
 }

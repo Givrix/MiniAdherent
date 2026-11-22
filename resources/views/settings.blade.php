@@ -86,7 +86,7 @@
                 <div>
                     <h3 class="mb-1 text-sm font-medium text-slate-800">Import</h3>
                     <p class="mb-2 text-xs text-slate-500">
-                        En-têtes attendus : <code class="rounded bg-slate-100 px-1">morphy;firstname;lastname;pseudo;company;email;subscription_date</code>.
+                        En-têtes attendus : <code class="rounded bg-slate-100 px-1">morphy;firstname;lastname;pseudo;company;email;created_at;subscription_end</code> (dates AAAA-MM-JJ ; la date d'adhésion est déduite de la fin d'adhésion moins un an).
                         Délimiteur auto-détecté (`,` ou `;`), UTF-8, dates au format AAAA-MM-JJ.
                         Les lignes dont l’email correspond à un adhérent existant le mettent à jour, les autres créent un adhérent.
                     </p>

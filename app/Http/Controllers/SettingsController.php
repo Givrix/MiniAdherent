@@ -69,7 +69,7 @@ class SettingsController extends Controller
         return response()->streamDownload(function () {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF");
-            fputcsv($out, ['morphy', 'firstname', 'lastname', 'pseudo', 'company', 'email', 'subscription_date', 'subscription_end'], ';');
+            fputcsv($out, ['morphy', 'firstname', 'lastname', 'pseudo', 'company', 'email', 'created_at', 'subscription_end'], ';');
 
             Member::query()->orderBy('lastname')->orderBy('firstname')->chunk(500, function ($members) use ($out) {
                 foreach ($members as $member) {
@@ -80,7 +80,7 @@ class SettingsController extends Controller
                         $member->pseudo,
                         $member->company,
                         $member->email,
-                        $member->subscription_date?->toDateString(),
+                        $member->created_at?->toDateString(),
                         $member->subscription_end?->toDateString(),
                     ], ';');
                 }
@@ -111,7 +111,7 @@ class SettingsController extends Controller
 
         $header[0] = ltrim($header[0], "\xEF\xBB\xBF");
         $columns = array_map(fn ($column) => Str::of(trim((string) $column))->lower()->__toString(), $header);
-        $required = ['firstname', 'lastname', 'pseudo', 'company', 'email', 'morphy', 'subscription_date'];
+        $required = ['firstname', 'lastname', 'pseudo', 'company', 'email', 'morphy', 'created_at', 'subscription_end'];
 
         $created = 0;
         $updated = 0;
@@ -154,19 +154,39 @@ class SettingsController extends Controller
                 continue;
             }
 
-            $subscriptionDate = null;
-            if ($memberData['subscription_date'] !== '') {
-                $subscriptionDate = $this->parseDate($memberData['subscription_date']);
-                if ($subscriptionDate === null) {
-                    $errors[] = "Ligne {$line} : date d’adhésion illisible (attendu AAAA-MM-JJ).";
+            $createdAt = null;
+            if ($memberData['created_at'] !== '') {
+                $createdAt = $this->parseDate($memberData['created_at']);
+                if ($createdAt === null) {
+                    $errors[] = "Ligne {$line} : date de création illisible (attendu AAAA-MM-JJ).";
 
                     continue;
                 }
-                if ($subscriptionDate->isFuture()) {
-                    $errors[] = "Ligne {$line} : date d’adhésion dans le futur.";
+                if ($createdAt->isFuture()) {
+                    $errors[] = "Ligne {$line} : date de création dans le futur.";
 
                     continue;
                 }
+            }
+
+            $subscriptionEnd = null;
+            if ($memberData['subscription_end'] !== '') {
+                $subscriptionEnd = $this->parseDate($memberData['subscription_end']);
+                if ($subscriptionEnd === null) {
+                    $errors[] = "Ligne {$line} : fin d’adhésion illisible (attendu AAAA-MM-JJ).";
+
+                    continue;
+                }
+            }
+
+            $subscriptionDate = $subscriptionEnd !== null
+                ? $subscriptionEnd->copy()->subYear()
+                : $createdAt;
+
+            if ($subscriptionDate !== null && $subscriptionDate->isFuture()) {
+                $errors[] = "Ligne {$line} : date d’adhésion déduite dans le futur.";
+
+                continue;
             }
 
             $attributes = [
@@ -177,7 +197,9 @@ class SettingsController extends Controller
                 'company' => $memberData['company'] !== '' ? $memberData['company'] : null,
                 'email' => $memberData['email'] !== '' ? $memberData['email'] : null,
                 'subscription_date' => $subscriptionDate?->toDateString(),
-                'subscription_end' => $subscriptionDate !== null ? SubscriptionPeriod::computeEnd($subscriptionDate->toDateString())->toDateString() : null,
+                'subscription_end' => $subscriptionEnd !== null
+                    ? $subscriptionEnd->toDateString()
+                    : ($subscriptionDate !== null ? SubscriptionPeriod::computeEnd($subscriptionDate->toDateString())->toDateString() : null),
             ];
 
             $existing = $attributes['email'] !== null
@@ -185,12 +207,14 @@ class SettingsController extends Controller
                 : null;
 
             if ($existing !== null) {
+                if ($createdAt !== null) {
+                    $attributes['created_at'] = $createdAt->toDateTimeString();
+                }
+
                 $existing->update($attributes);
                 $updated++;
             } else {
-                if ($subscriptionDate !== null) {
-                    $attributes['created_at'] = $subscriptionDate->toDateTimeString();
-                }
+                $attributes['created_at'] = ($createdAt ?? $subscriptionDate)?->toDateTimeString();
 
                 Member::create($attributes);
                 $created++;
@@ -218,6 +242,6 @@ class SettingsController extends Controller
     {
         $date = Carbon::createFromFormat('Y-m-d', $value);
 
-        return $date instanceof Carbon && $date->format('Y-m-d') === $value ? $date : null;
+        return $date instanceof Carbon && $date->format('Y-m-d') === $value ? $date->startOfDay() : null;
     }
 }

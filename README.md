@@ -11,6 +11,7 @@
     adhésion **avant** la date de bascule → fin de période de l'année en cours ;
     adhésion **à partir** de la date de bascule → fin de période de l'année suivante.
 - Import / export CSV des membres (upsert par email, séparateur auto-détecté, UTF-8, dates AAAA-MM-JJ).
+  Colonnes de dates : `created_at` (date de création) et `subscription_end` (fin d'adhésion) ; la date d'adhésion n'est pas saisie, elle est déduite de la fin d'adhésion moins un an (à défaut, la date de création sert de date d'adhésion).
 - Recherche en direct des adhérents au fil de la saisie pour éviter les doublons.
 - Blocage des doublons à la création comme à l'édition : pseudo identique refusé quand l'identité repose sur le pseudo seul (prénom et nom vides), email identique refusé (comparaison insensible à la casse). Un tip ambre « Membre déjà existant » s'affiche sous les champs concernés au fil de la saisie.
 - Fiche adhérent, édition et suppression.
@@ -70,8 +71,11 @@ préalable, les pages renvoient l'exception `ViteManifestNotFoundException`.
 
 La page **Paramètres** (lien en haut à droite, réservée à la session connectée) permet de basculer entre
 les deux modes de calcul et d'importer/exporter les membres :
-- export : `GET /members/export` (colonnes `morphy;firstname;lastname;pseudo;company;email;subscription_date;subscription_end`) ;
-- import : `POST /members/import` (mêmes colonnes ; connexion par email → mise à jour si existant, sinon création ; les lignes en erreur sont signalées sans bloquer le reste).
+- export : `GET /members/export` (colonnes `morphy;firstname;lastname;pseudo;company;email;created_at;subscription_end`) ;
+- import : `POST /members/import` (mêmes colonnes ; connexion par email → mise à jour si existant, sinon création ;
+  la date d'adhésion est extrapolée par déduction d'un an depuis la fin d'adhésion ; si la fin est absente, la date
+  de création sert de date d'adhésion et la fin est recalculée selon le mode courant ; les lignes en erreur sont
+  signalées sans bloquer le reste).
 
 Le changement de mode s'applique aux adhésions saisies après la bascule ; les dates déjà enregistrées ne sont pas recalculées.
 

@@ -41,6 +41,13 @@ Le compte de gestionnaire est créé par le seeder à partir des variables
 la première exécution, sinon les identifiants par défaut sont
 `admin@exemple.org` / `M1niAdherent!` (à changer impérativement).
 
+Après toute modification de ces variables, réexécutez le seeder — il garantit
+qu'un seul compte de gestionnaire existe, celui du `.env` :
+
+```sh
+php artisan db:seed --force
+```
+
 ## Développement
 
 ```sh

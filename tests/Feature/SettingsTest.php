@@ -29,16 +29,20 @@ class SettingsTest extends TestCase
         $this->post('/settings', ['subscription_mode' => 'fixed'])->assertRedirect('/settings');
     }
 
-    public function test_fixed_mode_ends_the_membership_on_the_next_july_31(): void
+    public function test_fixed_mode_ends_the_membership_on_the_period_end_depending_on_the_switch_date(): void
     {
         $this->actingAs(User::factory()->create());
-        $this->post('/settings', ['subscription_mode' => 'fixed']);
+        $this->post('/settings', [
+            'subscription_mode' => 'fixed',
+            'fixed_period_end' => '31/07',
+            'fixed_switch_date' => '01/06',
+        ]);
 
         $this->postJson('/api/members', [
             'morphy' => 'phy',
             'firstname' => 'Jean',
             'lastname' => 'Dupont',
-            'subscription_date' => '2026-03-15',
+            'subscription_date' => '2026-05-31',
         ])->assertCreated()
             ->assertJsonPath('subscription_end', '2026-07-31');
 
@@ -46,17 +50,56 @@ class SettingsTest extends TestCase
             'morphy' => 'phy',
             'firstname' => 'Marie',
             'lastname' => 'Martin',
-            'subscription_date' => '2026-09-02',
+            'subscription_date' => '2026-06-01',
         ])->assertJsonPath('subscription_end', '2027-07-31');
-
-        app('session.store')->flush();
 
         $this->postJson('/api/members', [
             'morphy' => 'phy',
             'firstname' => 'Pierre',
             'lastname' => 'Rossi',
+            'subscription_date' => '2026-09-02',
+        ])->assertJsonPath('subscription_end', '2027-07-31');
+
+        $this->postJson('/api/members', [
+            'morphy' => 'phy',
+            'firstname' => 'Claire',
+            'lastname' => 'Noel',
             'subscription_date' => '2026-03-15',
         ])->assertJsonPath('subscription_end', '2026-07-31');
+    }
+
+    public function test_fixed_mode_dates_are_configurable(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $this->post('/settings', [
+            'subscription_mode' => 'fixed',
+            'fixed_period_end' => '31/08',
+            'fixed_switch_date' => '15/06',
+        ]);
+
+        $this->postJson('/api/members', [
+            'morphy' => 'phy',
+            'firstname' => 'Jean',
+            'lastname' => 'Dupont',
+            'subscription_date' => '2026-06-15',
+        ])->assertJsonPath('subscription_end', '2027-08-31');
+
+        $this->postJson('/api/members', [
+            'morphy' => 'phy',
+            'firstname' => 'Marie',
+            'lastname' => 'Martin',
+            'subscription_date' => '2026-06-14',
+        ])->assertJsonPath('subscription_end', '2026-08-31');
+    }
+
+    public function test_fixed_mode_dates_are_validated(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $this->post('/settings', [
+            'subscription_mode' => 'fixed',
+            'fixed_period_end' => '32/13',
+        ])->assertSessionHasErrors(['fixed_period_end']);
     }
 
     public function test_fixed_mode_removal_restores_floating_behavior(): void

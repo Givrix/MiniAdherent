@@ -193,7 +193,10 @@
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-const subscriptionMode = document.getElementById('app')?.dataset.subscriptionMode || 'floating';
+const appEl = document.getElementById('app');
+const subscriptionMode = appEl?.dataset.subscriptionMode || 'floating';
+const fixedPeriodEnd = appEl?.dataset.fixedPeriodEnd || '31/07';
+const fixedSwitchDate = appEl?.dataset.fixedSwitchDate || '01/06';
 
 const today = new Date().toISOString().slice(0, 10);
 
@@ -229,12 +232,21 @@ const isValid = computed(() => {
   return identityOk && emailOk && form.subscription_date !== '';
 });
 
+function parseDayMonth(value) {
+  const [day, month] = value.split('/').map(Number);
+  return { day, month: month - 1 };
+}
+
 function subscriptionEndDate(value) {
   const date = new Date(value);
   if (subscriptionMode === 'fixed') {
-    const end = new Date(date.getFullYear(), 6, 31);
-    if (date >= end) end.setFullYear(end.getFullYear() + 1);
-    return end;
+    const sw = parseDayMonth(fixedSwitchDate);
+    const pe = parseDayMonth(fixedPeriodEnd);
+    const swThisYear = new Date(date.getFullYear(), sw.month, sw.day);
+
+    return date < swThisYear
+      ? new Date(date.getFullYear(), pe.month, pe.day)
+      : new Date(date.getFullYear() + 1, pe.month, pe.day);
   }
   date.setFullYear(date.getFullYear() + 1);
   date.setDate(date.getDate() - 1);

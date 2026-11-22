@@ -17,6 +17,8 @@ class SettingsController extends Controller
     {
         return view('settings', [
             'mode' => SubscriptionPeriod::mode(),
+            'fixedPeriodEnd' => SubscriptionPeriod::fixedPeriodEnd(),
+            'fixedSwitchDate' => SubscriptionPeriod::fixedSwitchDate(),
         ]);
     }
 
@@ -24,10 +26,36 @@ class SettingsController extends Controller
     {
         $data = $request->validate([
             'subscription_mode' => ['required', 'in:'.implode(',', SubscriptionPeriod::MODES)],
+            'fixed_period_end' => ['nullable', 'regex:/^\d{1,2}\/\d{1,2}$/'],
+            'fixed_switch_date' => ['nullable', 'regex:/^\d{1,2}\/\d{1,2}$/'],
         ], [
             'subscription_mode.required' => 'Le mode d’adhésion est obligatoire.',
             'subscription_mode.in' => 'Le mode d’adhésion est invalide.',
+            'fixed_period_end.regex' => 'La date de fin de période doit être au format JJ/MM.',
+            'fixed_switch_date.regex' => 'La date de bascule doit être au format JJ/MM.',
         ]);
+
+        foreach (['fixed_period_end', 'fixed_switch_date'] as $key) {
+            if (! empty($data[$key])) {
+                [$day, $month] = array_map('intval', explode('/', $data[$key]));
+
+                if ($day < 1 || $day > 31 || $month < 1 || $month > 12) {
+                    return back()->withErrors([
+                        $key => 'Cette date JJ/MM est invalide (jour 1-31, mois 1-12).',
+                    ])->withInput();
+                }
+
+                $data[$key] = sprintf('%02d/%02d', $day, $month);
+            }
+        }
+
+        if (isset($data['fixed_period_end'])) {
+            Setting::set('fixed_period_end', $data['fixed_period_end']);
+        }
+
+        if (isset($data['fixed_switch_date'])) {
+            Setting::set('fixed_switch_date', $data['fixed_switch_date']);
+        }
 
         Setting::set('subscription_mode', $data['subscription_mode']);
 

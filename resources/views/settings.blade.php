@@ -29,9 +29,29 @@
                                @checked($mode === 'fixed')>
                         <span>
                             <strong class="text-slate-800">Période fixe annuelle</strong>
-                            <span class="block text-slate-500">Fin d’adhésion au 31 juillet suivant la date d’adhésion, pour tous les adhérents.</span>
+                            <span class="block text-slate-500">Fin d’adhésion à la date de fin de période (avant la date de bascule) ou à la date de fin de période de l’année suivante (à partir de la date de bascule).</span>
                         </span>
                     </label>
+
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                        <div>
+                            <label for="fixed_period_end" class="mb-1 block text-sm font-medium text-slate-700">Date de fin de période (JJ/MM)</label>
+                            <input id="fixed_period_end" name="fixed_period_end" type="text" inputmode="numeric" placeholder="31/07" value="{{ old('fixed_period_end', $fixedPeriodEnd) }}"
+                                   class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none">
+                            @error('fixed_period_end')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
+                            <label for="fixed_switch_date" class="mb-1 block text-sm font-medium text-slate-700">Date de bascule (JJ/MM)</label>
+                            <input id="fixed_switch_date" name="fixed_switch_date" type="text" inputmode="numeric" placeholder="01/06" value="{{ old('fixed_switch_date', $fixedSwitchDate) }}"
+                                   class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none">
+                            <p class="mt-1 text-xs text-slate-500">Adhésion avant cette date → fin de période de l’année en cours ; à partir de cette date → fin de période de l’année suivante.</p>
+                            @error('fixed_switch_date')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
                 </fieldset>
 
                 <div class="flex items-center gap-3">

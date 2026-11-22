@@ -5,7 +5,9 @@
 - Saisie simplifiée d'un adhérent : personne physique ou morale (prénom, nom, société, email) et date d'adhésion.
 - Deux modes de fin d'adhésion, paramétrables par le gestionnaire (page Paramètres) :
   - **date flottante** (défaut) : date d'adhésion + 1 an, réadhésion reportée depuis la période en cours ;
-  - **période fixe annuelle** : fin au 31 juillet suivant la date d'adhésion.
+  - **période fixe annuelle** : deux dates paramétrables (format JJ/MM, défauts 31/07 et 01/06) —
+    adhésion **avant** la date de bascule → fin de période de l'année en cours ;
+    adhésion **à partir** de la date de bascule → fin de période de l'année suivante.
 - Import / export CSV des membres (upsert par email, séparateur auto-détecté, UTF-8, dates AAAA-MM-JJ).
 - Recherche en direct des adhérents au fil de la saisie pour éviter les doublons.
 - Fiche adhérent, édition et suppression.

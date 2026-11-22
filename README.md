@@ -14,17 +14,26 @@
 - Vite + Vue 3 + Tailwind CSS 4 — frontend.
 - SQLite par défaut (fichier `database/database.sqlite`), migration vers MySQL possible via `.env`.
 
-## Installation
+## Démarrage rapide
 
 ```sh
+# 1. Dépendances PHP et JS
 composer install
 npm install
 
+# 2. Configuration
 cp .env.example .env
 php artisan key:generate
 
+# 3. Base de données
 touch database/database.sqlite
 php artisan migrate --seed
+
+# 4. Build des assets front (obligatoire avant le premier lancement)
+npm run build
+
+# 5. Lancement
+php artisan serve   # http://localhost:8000
 ```
 
 Le compte de gestionnaire est créé par le seeder à partir des variables
@@ -35,9 +44,18 @@ la première exécution, sinon les identifiants par défaut sont
 ## Développement
 
 ```sh
-npm run dev        # build Vite en mode watch
+npm run dev        # build Vite en mode watch (bundleling à chaud, remplace npm run build)
 php artisan serve  # http://localhost:8000
 ```
+
+`npm run dev` doit rester actif pendant le développement : sans lui et sans build
+préalable, les pages renvoient l'exception `ViteManifestNotFoundException`.
+
+## Dépannage
+
+**`ViteManifestNotFoundException` (manifest.json introuvable)** : les assets front
+ne sont pas compilés. Lancez `npm run build` (production) ou gardez
+`npm run dev` actif (développement), puis rechargez la page.
 
 ## Production
 

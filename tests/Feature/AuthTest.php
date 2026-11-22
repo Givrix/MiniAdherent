@@ -10,9 +10,11 @@ class AuthTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_guests_are_redirected_to_the_login_page(): void
+    public function test_guests_get_the_public_registration_page_and_admin_pages_stay_private(): void
     {
-        $this->get('/')->assertRedirect('/login');
+        $this->get('/')->assertOk()->assertSee('data-public="public"', false);
+        $this->get('/settings')->assertRedirect('/login');
+        $this->get('/members/export')->assertRedirect('/login');
     }
 
     public function test_a_user_can_log_in_and_out(): void

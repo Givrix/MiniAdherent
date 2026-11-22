@@ -2,11 +2,11 @@
   <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
     <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 class="mb-4 text-lg font-semibold text-slate-900">
-        {{ editMode ? 'Modifier l’adhérent' : 'Nouvelle adhésion' }}
+        {{ publicAccess ? 'Inscription' : (editMode ? 'Modifier l’adhérent' : 'Nouvelle adhésion') }}
       </h2>
 
       <form @submit.prevent="saveMember" class="space-y-4" v-show="!submitted">
-        <div>
+        <div v-if="!publicAccess">
           <label for="subdate" class="mb-1 block text-sm font-medium text-slate-700">Date d’adhésion</label>
           <input
             id="subdate"
@@ -108,7 +108,7 @@
             :disabled="!isValid || saving"
             class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {{ editMode ? 'Enregistrer' : 'Appliquer' }}
+            {{ publicAccess ? 'Envoyer' : (editMode ? 'Enregistrer' : 'Appliquer') }}
           </button>
           <button
             v-if="editMode"
@@ -182,7 +182,7 @@
         </dl>
         <div class="mt-4 flex gap-2">
           <button
-            v-if="!editMode"
+            v-if="!publicAccess && !editMode"
             type="button"
             @click="editMember"
             class="rounded-md border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 transition hover:bg-amber-100"
@@ -190,6 +190,7 @@
             Éditer
           </button>
           <button
+            v-if="!publicAccess"
             type="button"
             @click="deleteMember"
             class="rounded-md border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-100"
@@ -209,6 +210,7 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue';
 
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 const appEl = document.getElementById('app');
+const publicAccess = (appEl?.dataset.public || 'auth') === 'public';
 const subscriptionMode = appEl?.dataset.subscriptionMode || 'floating';
 const fixedPeriodEnd = appEl?.dataset.fixedPeriodEnd || '31/07';
 const fixedSwitchDate = appEl?.dataset.fixedSwitchDate || '01/06';
@@ -248,7 +250,8 @@ const isValid = computed(() => {
       ? (form.firstname.length > 0 && form.lastname.length > 0) || form.pseudo.length > 0
       : form.company.length > 0;
   const emailOk = form.email === '' || /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email);
-  return identityOk && emailOk && form.subscription_date !== '' && !pseudoTip.value && !emailTip.value;
+  const dateOk = publicAccess || form.subscription_date !== '';
+  return identityOk && emailOk && dateOk && !pseudoTip.value && !emailTip.value;
 });
 
 function parseDayMonth(value) {
@@ -444,7 +447,7 @@ async function resetForm() {
 }
 
 function focusFilling() {
-  if (form.subscription_date !== '') {
+  if (publicAccess || form.subscription_date !== '') {
     firstname.value?.focus();
   } else {
     subdate.value?.focus();
@@ -453,7 +456,9 @@ function focusFilling() {
 
 onMounted(() => {
   resetForm().then(() => {
-    form.subscription_date = today;
+    if (!publicAccess) {
+      form.subscription_date = today;
+    }
     focusFilling();
   });
 });

@@ -25,6 +25,14 @@
                 </form>
                 </div>
             @endauth
+            @guest
+                <div class="flex items-center gap-3">
+                    <a href="{{ route('home') }}"
+                       class="text-sm transition {{ request()->routeIs('home') ? 'font-semibold text-indigo-700' : 'text-slate-600 hover:text-slate-900' }}">Saisie</a>
+                    <a href="{{ route('login') }}"
+                       class="text-sm transition {{ request()->routeIs('login') ? 'font-semibold text-indigo-700' : 'text-slate-600 hover:text-slate-900' }}">Connexion</a>
+                </div>
+            @endguest
         </div>
     </header>
 

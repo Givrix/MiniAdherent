@@ -11,10 +11,48 @@ class MemberTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_only_authenticated_users_can_manage_members(): void
+    public function test_only_authenticated_users_can_update_or_delete_members(): void
     {
-        $this->getJson('/api/members')->assertUnauthorized();
-        $this->postJson('/api/members', [])->assertUnauthorized();
+        $member = Member::create(['morphy' => 'phy', 'firstname' => 'Jean', 'lastname' => 'DUPONT', 'subscription_date' => '2026-03-15', 'subscription_end' => '2027-03-14']);
+
+        $this->putJson("/api/members/{$member->id}", [])->assertUnauthorized();
+        $this->deleteJson("/api/members/{$member->id}")->assertUnauthorized();
+    }
+
+    public function test_guests_can_create_a_member_without_subscription_dates(): void
+    {
+        $this->postJson('/api/members', [
+            'morphy' => 'phy',
+            'firstname' => 'Jean',
+            'lastname' => 'Dupont',
+            'email' => 'invite@exemple.org',
+        ])->assertCreated()
+            ->assertJsonPath('firstname', 'J**n')
+            ->assertJsonPath('email', 'i****e@e*****e.org');
+
+        $member = Member::query()->where('email', 'invite@exemple.org')->first();
+        $this->assertNotNull($member);
+        $this->assertNull($member->subscription_date);
+        $this->assertNull($member->subscription_end);
+    }
+
+    public function test_guests_only_see_masked_results(): void
+    {
+        Member::create(['morphy' => 'phy', 'firstname' => 'Jean', 'lastname' => 'DUPONT', 'pseudo' => 'jojo', 'email' => 'jean@exemple.org', 'subscription_date' => '2026-05-01', 'subscription_end' => '2027-05-01']);
+
+        $this->getJson('/api/members?lastname=dupont')
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.firstname', 'J**n')
+            ->assertJsonPath('0.lastname', 'D****T')
+            ->assertJsonPath('0.pseudo', 'j**o')
+            ->assertJsonPath('0.email', 'j**n@e*****e.org')
+            ->assertJsonPath('0.subscription_end', '2027-05-01');
+
+        $member = Member::query()->where('lastname', 'DUPONT')->first();
+        $this->getJson("/api/members/{$member->id}")
+            ->assertOk()
+            ->assertJsonPath('email', 'j**n@e*****e.org');
     }
 
     public function test_it_creates_a_physical_member_with_a_one_year_subscription(): void
@@ -181,10 +219,8 @@ class MemberTest extends TestCase
         ])->assertJsonValidationErrors(['email']);
     }
 
-    public function test_the_exists_endpoint_requires_authentication_and_reports_duplicates(): void
+    public function test_the_exists_endpoint_reports_duplicates(): void
     {
-        $this->getJson('/api/members/exists?email=jean@exemple.org')->assertUnauthorized();
-
         $user = User::factory()->create();
         $this->actingAs($user);
 

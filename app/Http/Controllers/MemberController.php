@@ -30,12 +30,22 @@ class MemberController extends Controller
             }
         }
 
-        return response()->json($query->get());
+        $members = $query->get();
+
+        if (! auth()->check()) {
+            $members->transform(fn (Member $member) => $this->masked($member));
+        }
+
+        return response()->json($members);
     }
 
     public function store(Request $request): JsonResponse
     {
         $data = $this->validated($request);
+
+        if (! auth()->check()) {
+            $data['subscription_date'] = null;
+        }
 
         $this->rejectDuplicates($data, null);
 
@@ -46,7 +56,7 @@ class MemberController extends Controller
 
         $member = Member::create($data);
 
-        return response()->json($member, 201);
+        return response()->json(auth()->check() ? $member : $this->masked($member), 201);
     }
 
     public function exists(Request $request): JsonResponse
@@ -59,7 +69,7 @@ class MemberController extends Controller
 
     public function show(Member $member): JsonResponse
     {
-        return response()->json($member);
+        return response()->json(auth()->check() ? $member : $this->masked($member));
     }
 
     public function update(Request $request, Member $member): JsonResponse
@@ -123,6 +133,55 @@ class MemberController extends Controller
             ->whereRaw('LOWER(email) = ?', [mb_strtolower(trim($email))])
             ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
             ->exists();
+    }
+
+    private function masked(Member $member): array
+    {
+        return [
+            'id' => $member->id,
+            'morphy' => $member->morphy,
+            'firstname' => $this->mask($member->firstname),
+            'lastname' => $this->mask($member->lastname),
+            'pseudo' => $this->mask($member->pseudo),
+            'company' => $this->mask($member->company),
+            'email' => $this->maskEmail($member->email),
+            'subscription_date' => $member->subscription_date?->toDateString(),
+            'subscription_end' => $member->subscription_end?->toDateString(),
+        ];
+    }
+
+    private function mask(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        $length = mb_strlen($value);
+
+        if ($length <= 2) {
+            return mb_substr($value, 0, 1).str_repeat('*', max(1, $length - 1));
+        }
+
+        return mb_substr($value, 0, 1).str_repeat('*', $length - 2).mb_substr($value, -1);
+    }
+
+    private function maskEmail(?string $email): ?string
+    {
+        $email = trim((string) $email);
+
+        if ($email === '') {
+            return null;
+        }
+
+        [$local, $domain] = explode('@', $email, 2);
+        $labels = explode('.', $domain);
+        $tld = array_pop($labels);
+
+        return $this->mask($local).'@'
+            .implode('.', array_map(fn (string $label) => $this->mask($label), $labels))
+            .'.'.$tld;
     }
 
     private function validated(Request $request): array

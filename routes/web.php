@@ -26,9 +26,9 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-Route::prefix('api/members')->middleware('throttle:60,1')->group(function () {
+Route::prefix('api/members')->middleware('throttle:members-read')->group(function () {
     Route::get('/', [MemberController::class, 'search'])->name('members.search');
     Route::get('/exists', [MemberController::class, 'exists'])->name('members.exists');
-    Route::post('/', [MemberController::class, 'store'])->middleware('throttle:10,1')->name('members.store');
+    Route::post('/', [MemberController::class, 'store'])->middleware('throttle:members-create')->name('members.store');
     Route::get('/{member}', [MemberController::class, 'show'])->name('members.show');
 });

@@ -287,6 +287,23 @@ class MemberTest extends TestCase
             ->assertJsonPath('0.lastname', 'ATTENTE');
     }
 
+    public function test_member_creation_has_an_independent_rate_limit_from_searches(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        for ($i = 0; $i < 15; $i++) {
+            $this->getJson('/api/members')->assertOk();
+        }
+
+        $this->postJson('/api/members', [
+            'morphy' => 'phy',
+            'firstname' => 'Jean',
+            'lastname' => 'Dupont',
+            'subscription_date' => '2026-03-15',
+        ])->assertCreated();
+    }
+
     public function test_search_is_limited_to_five_results(): void
     {
         $user = User::factory()->create();

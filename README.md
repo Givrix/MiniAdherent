@@ -14,7 +14,7 @@
 - Import / export CSV des membres (upsert par email, séparateur auto-détecté, UTF-8, dates AAAA-MM-JJ).
   Colonnes de dates : `created_at` (date de création) et `subscription_end` (fin d'adhésion) ; la date d'adhésion n'est pas saisie, elle est déduite de la fin d'adhésion moins un an (à défaut, la date de création sert de date d'adhésion).
 - **Auto-inscription publique** : sans session active, la page d'accueil devient un formulaire d'inscription (pas de date d'adhésion — les dates restent nulles ; recherche disponible comme en mode connecté, mais aucune édition ni suppression). Les fiches renvoyées aux visiteurs non connectés sont censurées (prénom, nom, pseudo, société et email masqués, ex. `J**n D****T`, `j**n@e*****e.org`) ; l'accès aux endpoints publics est limité en débit (throttle).
-- Recherche en direct des adhérents au fil de la saisie pour éviter les doublons ; champs tous vides (mode connecté), la recherche liste les fiches sans date d'adhésion encore à compléter.
+- Recherche en direct des adhérents au fil de la saisie pour éviter les doublons ; champs tous vides (mode connecté), la recherche liste les fiches sans date d'adhésion encore à compléter. La liste se rafraîchit automatiquement toutes les 30 s en mode connecté : une nouvelle auto-inscription apparaît sans recharger la page.
 - Blocage des doublons à la création comme à l'édition : pseudo identique refusé quand l'identité repose sur le pseudo seul (prénom et nom vides), email identique refusé (comparaison insensible à la casse). Un tip ambre « Membre déjà existant » s'affiche sous les champs concernés au fil de la saisie.
 - Fiche adhérent, édition et suppression.
 - Aucune gestion de montant ni de paiement : les cotisations sont saisies directement dans Dolibarr.

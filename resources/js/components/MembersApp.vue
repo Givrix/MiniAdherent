@@ -319,7 +319,7 @@ async function fetchJson(url, options = {}) {
   return response.status === 204 ? null : response.json();
 }
 
-async function refreshList() {
+async function refreshList(preserveCurrent = false) {
   if (editMode.value) return;
 
   const params = new URLSearchParams();
@@ -329,7 +329,10 @@ async function refreshList() {
 
   const query = params.toString();
   members.value = await fetchJson(`/api/members${query ? `?${query}` : ''}`);
-  current.value = null;
+
+  if (!preserveCurrent) {
+    current.value = null;
+  }
 }
 
 async function checkDuplicates() {
@@ -456,5 +459,13 @@ onMounted(() => {
     }
     focusFilling();
   });
+
+  if (!publicAccess) {
+    setInterval(() => {
+      if (!editMode.value) {
+        refreshList(true).catch(() => {});
+      }
+    }, 30000);
+  }
 });
 </script>

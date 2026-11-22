@@ -156,15 +156,16 @@ class SettingsTest extends TestCase
             'phy;Claire;NOEL;;;pas-un-email;2026-05-01;2027-05-01',
             'phy;;;blendax;;blendax@exemple.org;;',
             'phy;Zoe;MARTIN;;;zoe@exemple.org;2026-05-01;',
+            'phy;Hector;LOZE;;;;;2026-05-01;2027-05-01',
         ]);
 
         $response = $this->post('/members/import', [
             'file' => UploadedFile::fake()->createWithContent('adherents.csv', $csv),
         ])->assertRedirect('/settings');
 
-        $response->assertSessionHas('import_created', 4);
+        $response->assertSessionHas('import_created', 5);
         $response->assertSessionHas('import_updated', 1);
-        $response->assertSessionHas('import_created', 4);
+        $response->assertSessionHas('import_created', 5);
         $response->assertSessionHas('import_updated', 1);
         $response->assertSessionHas('import_errors.0', 'Ligne 5 : prénom et nom requis, ou un pseudo.');
         $response->assertSessionHas('import_errors.1', 'Ligne 6 : email invalide.');
@@ -174,6 +175,10 @@ class SettingsTest extends TestCase
         $this->assertDatabaseHas('members', ['email' => 'contact@lelectro.fr', 'morphy' => 'mor', 'company' => 'L electro']);
         $this->assertDatabaseMissing('members', ['email' => 'bob@exemple.org']);
         $this->assertDatabaseHas('members', ['email' => 'zoe@exemple.org', 'subscription_date' => '2026-05-01', 'subscription_end' => '2027-05-01', 'created_at' => '2026-05-01 00:00:00']);
+        $hector = Member::query()->where('lastname', 'LOZE')->first();
+        $this->assertNotNull($hector);
+        $this->assertSame('HECTOR', $hector->firstname);
+        $this->assertNull($hector->email);
         $blendax = Member::query()->where('email', 'blendax@exemple.org')->first();
         $this->assertNotNull($blendax);
         $this->assertNull($blendax->subscription_date);

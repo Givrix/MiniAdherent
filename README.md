@@ -3,7 +3,8 @@
 ## Fonctionnalités
 
 - Saisie simplifiée d'un adhérent : personne physique ou morale (prénom, nom, pseudo, société, email) et date d'adhésion.
-  Contraintes : ((prénom + nom) ou un pseudo) pour un physique, raison sociale pour un moral ; l'email est optionnel.
+  Contraintes : ((prénom + nom) ou un pseudo) pour un physique, raison sociale pour un moral (prénom et nom restent
+  affichés et optionnels pour un moral) ; l'email est optionnel.
   La date de création du membre en base est alignée sur la date d'adhésion saisie lors de la création.
 - Deux modes de fin d'adhésion, paramétrables par le gestionnaire (page Paramètres) :
   - **date flottante** (défaut) : date d'adhésion + 1 an, réadhésion reportée depuis la période en cours ;

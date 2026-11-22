@@ -33,7 +33,7 @@
           </div>
         </fieldset>
 
-        <div v-show="form.morphy === 'phy'" class="grid gap-4 sm:grid-cols-2">
+        <div class="grid gap-4 sm:grid-cols-2">
           <div>
             <label for="firstname" class="mb-1 block text-sm font-medium text-slate-700">Prénom</label>
             <input
@@ -41,8 +41,7 @@
               ref="firstname"
               type="text"
               v-model.trim="form.firstname"
-              :disabled="form.morphy === 'mor'"
-              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none disabled:bg-slate-100"
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
             />
             <p v-if="errors.firstname" class="mt-1 text-sm text-red-600">{{ errors.firstname[0] }}</p>
           </div>
@@ -52,8 +51,7 @@
               id="lastname"
               type="text"
               v-model.trim="form.lastname"
-              :disabled="form.morphy === 'mor'"
-              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none disabled:bg-slate-100"
+              class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
             />
             <p v-if="errors.lastname" class="mt-1 text-sm text-red-600">{{ errors.lastname[0] }}</p>
           </div>

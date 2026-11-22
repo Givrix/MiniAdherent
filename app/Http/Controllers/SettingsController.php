@@ -148,7 +148,7 @@ class SettingsController extends Controller
                 continue;
             }
 
-            if (! filter_var($memberData['email'], FILTER_VALIDATE_EMAIL)) {
+            if ($memberData['email'] !== '' && ! filter_var($memberData['email'], FILTER_VALIDATE_EMAIL)) {
                 $errors[] = "Ligne {$line} : email invalide.";
 
                 continue;

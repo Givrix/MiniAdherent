@@ -2,7 +2,8 @@
 
 ## Fonctionnalités
 
-- Saisie simplifiée d'un adhérent : personne physique ou morale (prénom, nom, société, email) et date d'adhésion.
+- Saisie simplifiée d'un adhérent : personne physique ou morale (prénom, nom, pseudo, société, email) et date d'adhésion.
+  Un adhérent doit avoir un email, et ((prénom + nom) ou un pseudo) s'il est physique, une raison sociale s'il est moral.
 - Deux modes de fin d'adhésion, paramétrables par le gestionnaire (page Paramètres) :
   - **date flottante** (défaut) : date d'adhésion + 1 an, réadhésion reportée depuis la période en cours ;
   - **période fixe annuelle** : deux dates paramétrables (format JJ/MM, défauts 31/07 et 01/06) —
@@ -67,7 +68,7 @@ préalable, les pages renvoient l'exception `ViteManifestNotFoundException`.
 
 La page **Paramètres** (lien en haut à droite, réservée à la session connectée) permet de basculer entre
 les deux modes de calcul et d'importer/exporter les membres :
-- export : `GET /members/export` (colonnes `morphy;firstname;lastname;company;email;subscription_date;subscription_end`) ;
+- export : `GET /members/export` (colonnes `morphy;firstname;lastname;pseudo;company;email;subscription_date;subscription_end`) ;
 - import : `POST /members/import` (mêmes colonnes ; connexion par email → mise à jour si existant, sinon création ; les lignes en erreur sont signalées sans bloquer le reste).
 
 Le changement de mode s'applique aux adhésions saisies après la bascule ; les dates déjà enregistrées ne sont pas recalculées.

@@ -55,19 +55,42 @@ class MemberTest extends TestCase
         $this->postJson('/api/members', [
             'morphy' => 'mor',
             'company' => 'Asso Exemple',
+            'email' => 'contact@asso-exemple.org',
             'subscription_date' => '2026-03-15',
         ])->assertCreated();
     }
 
-    public function test_it_requires_firstname_and_lastname_for_a_physical_member(): void
+    public function test_it_requires_a_name_and_a_pseudo_or_both_for_a_physical_member(): void
     {
         $user = User::factory()->create();
         $this->actingAs($user);
 
         $this->postJson('/api/members', [
             'morphy' => 'phy',
+            'email' => 'anonyme@exemple.org',
             'subscription_date' => '2026-03-15',
-        ])->assertJsonValidationErrors(['firstname', 'lastname']);
+        ])->assertJsonValidationErrors(['firstname']);
+
+        $this->postJson('/api/members', [
+            'morphy' => 'phy',
+            'pseudo' => 'freenode42',
+            'email' => 'freenode42@exemple.org',
+            'subscription_date' => '2026-03-15',
+        ])->assertCreated()
+            ->assertJsonPath('pseudo', 'freenode42');
+    }
+
+    public function test_it_requires_an_email(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $this->postJson('/api/members', [
+            'morphy' => 'phy',
+            'firstname' => 'Jean',
+            'lastname' => 'Dupont',
+            'subscription_date' => '2026-03-15',
+        ])->assertJsonValidationErrors(['email']);
     }
 
     public function test_it_rejects_future_subscription_dates_and_invalid_emails(): void
@@ -128,12 +151,13 @@ class MemberTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        $member = Member::create(['morphy' => 'phy', 'firstname' => 'Jean', 'lastname' => 'DUPONT', 'subscription_date' => '2025-03-15', 'subscription_end' => '2026-12-31']);
+        $member = Member::create(['morphy' => 'phy', 'firstname' => 'Jean', 'lastname' => 'DUPONT', 'email' => 'jean@exemple.org', 'subscription_date' => '2025-03-15', 'subscription_end' => '2026-12-31']);
 
         $this->putJson("/api/members/{$member->id}", [
             'morphy' => 'phy',
             'firstname' => 'Jean',
             'lastname' => 'DUPONT',
+            'email' => 'jean@exemple.org',
             'subscription_date' => '2026-11-01',
             'renewal' => true,
         ])->assertOk()

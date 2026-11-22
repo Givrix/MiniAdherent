@@ -33,7 +33,7 @@
           </div>
         </fieldset>
 
-        <div class="grid gap-4 sm:grid-cols-2">
+        <div v-show="form.morphy === 'phy'" class="grid gap-4 sm:grid-cols-2">
           <div>
             <label for="firstname" class="mb-1 block text-sm font-medium text-slate-700">Prénom</label>
             <input
@@ -57,6 +57,17 @@
             />
             <p v-if="errors.lastname" class="mt-1 text-sm text-red-600">{{ errors.lastname[0] }}</p>
           </div>
+        </div>
+
+        <div v-show="form.morphy === 'phy'">
+          <label for="pseudo" class="mb-1 block text-sm font-medium text-slate-700">Pseudo</label>
+          <input
+            id="pseudo"
+            type="text"
+            v-model.trim="form.pseudo"
+            class="w-full max-w-xs rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
+          />
+          <p v-if="errors.firstname" class="mt-1 text-sm text-red-600">{{ errors.firstname[0] }}</p>
         </div>
 
         <div v-show="form.morphy === 'mor'">
@@ -156,6 +167,10 @@
             <dt class="text-slate-500">Nom</dt>
             <dd class="text-right">{{ current.lastname || '—' }}</dd>
           </div>
+          <div v-if="current.pseudo && current.morphy === 'phy'" class="flex justify-between gap-2">
+            <dt class="text-slate-500">Pseudo</dt>
+            <dd class="text-right">{{ current.pseudo }}</dd>
+          </div>
           <div class="flex justify-between gap-2">
             <dt class="text-slate-500">Email</dt>
             <dd class="text-right">{{ current.email || '—' }}</dd>
@@ -206,6 +221,7 @@ const defaultForm = () => ({
   morphy: 'phy',
   firstname: '',
   lastname: '',
+  pseudo: '',
   company: '',
   email: '',
   subscription_date: '',
@@ -227,9 +243,9 @@ const newBtn = ref(null);
 const isValid = computed(() => {
   const identityOk =
     form.morphy === 'phy'
-      ? form.firstname.length > 0 && form.lastname.length > 0
+      ? (form.firstname.length > 0 && form.lastname.length > 0) || form.pseudo.length > 0
       : form.company.length > 0;
-  const emailOk = form.email === '' || /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email);
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.email);
   return identityOk && emailOk && form.subscription_date !== '';
 });
 
@@ -268,7 +284,7 @@ const computedEnd = computed(() => {
 
 function memberDisplay(member) {
   if (member.morphy === 'mor') return member.company || 'Personne morale';
-  return [member.firstname, member.lastname].filter(Boolean).join(' ') || 'Sans nom';
+  return [member.firstname, member.lastname].filter(Boolean).join(' ') || member.pseudo || 'Sans nom';
 }
 
 function formatShort(value) {
@@ -302,7 +318,7 @@ async function refreshList() {
   if (editMode.value) return;
 
   const params = new URLSearchParams();
-  for (const field of ['firstname', 'lastname', 'company', 'email']) {
+  for (const field of ['firstname', 'lastname', 'pseudo', 'company', 'email']) {
     if (form[field].trim() !== '') params.set(field, form[field].trim());
   }
 
@@ -363,6 +379,7 @@ function editMember() {
     morphy: current.value.morphy,
     firstname: current.value.firstname ?? '',
     lastname: current.value.lastname ?? '',
+    pseudo: current.value.pseudo ?? '',
     company: current.value.company ?? '',
     email: current.value.email ?? '',
     subscription_date: current.value.subscription_date ?? '',

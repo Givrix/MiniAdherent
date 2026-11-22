@@ -42,6 +42,7 @@ class SettingsTest extends TestCase
             'morphy' => 'phy',
             'firstname' => 'Jean',
             'lastname' => 'Dupont',
+            'email' => 'jean@exemple.org',
             'subscription_date' => '2026-05-31',
         ])->assertCreated()
             ->assertJsonPath('subscription_end', '2026-07-31');
@@ -50,6 +51,7 @@ class SettingsTest extends TestCase
             'morphy' => 'phy',
             'firstname' => 'Marie',
             'lastname' => 'Martin',
+            'email' => 'marie@exemple.org',
             'subscription_date' => '2026-06-01',
         ])->assertJsonPath('subscription_end', '2027-07-31');
 
@@ -57,6 +59,7 @@ class SettingsTest extends TestCase
             'morphy' => 'phy',
             'firstname' => 'Pierre',
             'lastname' => 'Rossi',
+            'email' => 'pierre@exemple.org',
             'subscription_date' => '2026-09-02',
         ])->assertJsonPath('subscription_end', '2027-07-31');
 
@@ -64,6 +67,7 @@ class SettingsTest extends TestCase
             'morphy' => 'phy',
             'firstname' => 'Claire',
             'lastname' => 'Noel',
+            'email' => 'claire@exemple.org',
             'subscription_date' => '2026-03-15',
         ])->assertJsonPath('subscription_end', '2026-07-31');
     }
@@ -81,6 +85,7 @@ class SettingsTest extends TestCase
             'morphy' => 'phy',
             'firstname' => 'Jean',
             'lastname' => 'Dupont',
+            'email' => 'jean2@exemple.org',
             'subscription_date' => '2026-06-15',
         ])->assertJsonPath('subscription_end', '2027-08-31');
 
@@ -88,6 +93,7 @@ class SettingsTest extends TestCase
             'morphy' => 'phy',
             'firstname' => 'Marie',
             'lastname' => 'Martin',
+            'email' => 'marie2@exemple.org',
             'subscription_date' => '2026-06-14',
         ])->assertJsonPath('subscription_end', '2026-08-31');
     }
@@ -114,6 +120,7 @@ class SettingsTest extends TestCase
             'morphy' => 'phy',
             'firstname' => 'Jean',
             'lastname' => 'Dupont',
+            'email' => 'jean3@exemple.org',
             'subscription_date' => '2026-03-15',
         ])->assertJsonPath('subscription_end', '2027-03-15');
     }
@@ -123,14 +130,14 @@ class SettingsTest extends TestCase
         $user = User::factory()->create();
         $this->actingAs($user);
 
-        Member::create(['morphy' => 'phy', 'firstname' => 'Jean', 'lastname' => 'DUPONT', 'email' => 'jean@exemple.org', 'subscription_date' => '2026-03-15', 'subscription_end' => '2027-03-14']);
+        Member::create(['morphy' => 'phy', 'firstname' => 'Jean', 'lastname' => 'DUPONT', 'pseudo' => 'jojo', 'email' => 'jean@exemple.org', 'subscription_date' => '2026-03-15', 'subscription_end' => '2027-03-14']);
 
         $response = $this->get('/members/export');
         $response->assertOk();
 
         $content = $response->streamedContent();
-        $this->assertStringContainsString('morphy;firstname;lastname;company;email;subscription_date;subscription_end', $content);
-        $this->assertStringContainsString('phy;Jean;DUPONT;;jean@exemple.org;2026-03-15;2027-03-14', $content);
+        $this->assertStringContainsString('morphy;firstname;lastname;pseudo;company;email;subscription_date;subscription_end', $content);
+        $this->assertStringContainsString('phy;Jean;DUPONT;jojo;;jean@exemple.org;2026-03-15;2027-03-14', $content);
     }
 
     public function test_import_creates_updates_and_reports_errors(): void
@@ -141,21 +148,25 @@ class SettingsTest extends TestCase
         Member::create(['morphy' => 'phy', 'firstname' => 'Jean', 'lastname' => 'DUPONT', 'email' => 'jean@exemple.org']);
 
         $csv = implode("\n", [
-            'morphy;firstname;lastname;company;email;subscription_date',
-            'phy;Jeanne;DUPONT;;jean@exemple.org;2026-03-15',
-            'phy;Alice;WILSON;;alice@exemple.org;2026-05-01',
-            'mor;;;L electro;contact@lelectro.fr;',
-            'phy;Bob;;bob@exemple.org;2026-05-01',
-            'phy;Claire;NOEL;;pas-un-email;2026-05-01',
+            'morphy;firstname;lastname;pseudo;company;email;subscription_date',
+            'phy;Jeanne;DUPONT;;;jean@exemple.org;2026-03-15',
+            'phy;Alice;WILSON;;;alice@exemple.org;2026-05-01',
+            'mor;;;;L electro;contact@lelectro.fr;',
+            'phy;;;;bob@exemple.org;2026-05-01',
+            'phy;Claire;NOEL;;;pas-un-email;2026-05-01',
+            'phy;;;blendax;;blendax@exemple.org;',
         ]);
 
         $response = $this->post('/members/import', [
             'file' => UploadedFile::fake()->createWithContent('adherents.csv', $csv),
         ])->assertRedirect('/settings');
 
-        $response->assertSessionHas('import_created', 2);
+        $response->assertSessionHas('import_created', 3);
         $response->assertSessionHas('import_updated', 1);
-        $response->assertSessionHas('import_errors.0', 'Ligne 5 : prénom et nom requis pour une personne physique.');
+        $response->assertSessionHas('import_created', 3);
+        $response->assertSessionHas('import_updated', 1);
+        $response->assertSessionHas('import_errors.0', 'Ligne 5 : prénom et nom requis, ou un pseudo.');
+        $response->assertSessionHas('import_errors.1', 'Ligne 6 : email invalide.');
 
         $this->assertDatabaseHas('members', ['email' => 'jean@exemple.org', 'firstname' => 'JEANNE', 'subscription_end' => '2027-03-15']);
         $this->assertDatabaseHas('members', ['email' => 'contact@lelectro.fr', 'morphy' => 'mor', 'company' => 'L electro']);

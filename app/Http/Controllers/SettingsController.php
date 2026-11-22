@@ -69,7 +69,7 @@ class SettingsController extends Controller
         return response()->streamDownload(function () {
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF");
-            fputcsv($out, ['morphy', 'firstname', 'lastname', 'company', 'email', 'subscription_date', 'subscription_end'], ';');
+            fputcsv($out, ['morphy', 'firstname', 'lastname', 'pseudo', 'company', 'email', 'subscription_date', 'subscription_end'], ';');
 
             Member::query()->orderBy('lastname')->orderBy('firstname')->chunk(500, function ($members) use ($out) {
                 foreach ($members as $member) {
@@ -77,6 +77,7 @@ class SettingsController extends Controller
                         $member->morphy,
                         $member->firstname,
                         $member->lastname,
+                        $member->pseudo,
                         $member->company,
                         $member->email,
                         $member->subscription_date?->toDateString(),
@@ -110,7 +111,7 @@ class SettingsController extends Controller
 
         $header[0] = ltrim($header[0], "\xEF\xBB\xBF");
         $columns = array_map(fn ($column) => Str::of(trim((string) $column))->lower()->__toString(), $header);
-        $required = ['firstname', 'lastname', 'company', 'email', 'morphy', 'subscription_date'];
+        $required = ['firstname', 'lastname', 'pseudo', 'company', 'email', 'morphy', 'subscription_date'];
 
         $created = 0;
         $updated = 0;
@@ -123,7 +124,7 @@ class SettingsController extends Controller
 
             foreach ($required as $index => $name) {
                 $position = array_search($name, $columns, true);
-                $memberData[$name] = $position === false ? null : trim((string) ($row[$position] ?? ''));
+                $memberData[$name] = $position === false ? '' : trim((string) ($row[$position] ?? ''));
             }
 
             if (implode('', array_map('strval', $row)) === '') {
@@ -132,8 +133,11 @@ class SettingsController extends Controller
 
             $morphy = in_array($memberData['morphy'], ['phy', 'mor'], true) ? $memberData['morphy'] : 'phy';
 
-            if ($morphy === 'phy' && ($memberData['firstname'] === '' || $memberData['lastname'] === '')) {
-                $errors[] = "Ligne {$line} : prénom et nom requis pour une personne physique.";
+            $hasIdentity = ($memberData['firstname'] !== '' && $memberData['lastname'] !== '')
+                || ($morphy === 'phy' && $memberData['pseudo'] !== '');
+
+            if ($morphy === 'phy' && ! $hasIdentity) {
+                $errors[] = "Ligne {$line} : prénom et nom requis, ou un pseudo.";
 
                 continue;
             }
@@ -144,7 +148,13 @@ class SettingsController extends Controller
                 continue;
             }
 
-            if ($memberData['email'] !== '' && ! filter_var($memberData['email'], FILTER_VALIDATE_EMAIL)) {
+            if ($memberData['email'] === '') {
+                $errors[] = "Ligne {$line} : email requis.";
+
+                continue;
+            }
+
+            if (! filter_var($memberData['email'], FILTER_VALIDATE_EMAIL)) {
                 $errors[] = "Ligne {$line} : email invalide.";
 
                 continue;
@@ -169,6 +179,7 @@ class SettingsController extends Controller
                 'morphy' => $morphy,
                 'firstname' => $memberData['firstname'] !== '' ? mb_strtoupper($memberData['firstname']) : null,
                 'lastname' => $memberData['lastname'] !== '' ? mb_strtoupper($memberData['lastname']) : null,
+                'pseudo' => $memberData['pseudo'] !== '' ? $memberData['pseudo'] : null,
                 'company' => $memberData['company'] !== '' ? $memberData['company'] : null,
                 'email' => $memberData['email'] !== '' ? $memberData['email'] : null,
                 'subscription_date' => $subscriptionDate?->toDateString(),

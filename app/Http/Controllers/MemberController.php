@@ -6,6 +6,7 @@ use App\Models\Member;
 use App\Services\SubscriptionPeriod;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class MemberController extends Controller
 {
@@ -21,7 +22,7 @@ class MemberController extends Controller
             ->orderBy('firstname')
             ->limit(10);
 
-        foreach (['firstname', 'lastname', 'company', 'email'] as $field) {
+        foreach (['firstname', 'lastname', 'pseudo', 'company', 'email'] as $field) {
             $value = trim((string) $request->query($field, ''));
             if ($value !== '') {
                 $query->where($field, 'like', "%{$value}%");
@@ -79,24 +80,32 @@ class MemberController extends Controller
     {
         $data = $request->validate([
             'morphy' => ['required', 'in:phy,mor'],
-            'firstname' => ['nullable', 'string', 'max:190', 'required_if:morphy,phy'],
-            'lastname' => ['nullable', 'string', 'max:190', 'required_if:morphy,phy'],
+            'firstname' => ['nullable', 'string', 'max:190'],
+            'lastname' => ['nullable', 'string', 'max:190'],
+            'pseudo' => ['nullable', 'string', 'max:190'],
             'company' => ['nullable', 'string', 'max:190', 'required_if:morphy,mor'],
-            'email' => ['nullable', 'email:rfc', 'max:190'],
+            'email' => ['required', 'email:rfc', 'max:190'],
             'subscription_date' => ['nullable', 'date', 'before_or_equal:today'],
         ], [
             'morphy.required' => 'La nature de l’adhérent est obligatoire.',
             'morphy.in' => 'La nature de l’adhérent est invalide.',
-            'firstname.required_if' => 'Le prénom est obligatoire pour un adhérent physique.',
-            'lastname.required_if' => 'Le nom est obligatoire pour un adhérent physique.',
             'company.required_if' => 'La raison sociale est obligatoire pour un adhérent moral.',
+            'email.required' => 'L’adresse email est obligatoire.',
             'email.email' => 'L’adresse email est invalide.',
             'subscription_date.date' => 'La date d’adhésion est invalide.',
             'subscription_date.before_or_equal' => 'La date d’adhésion ne peut pas être dans le futur.',
         ]);
 
+        if ($data['morphy'] === 'phy'
+            && (blank($data['pseudo'] ?? null) && (blank($data['firstname'] ?? null) || blank($data['lastname'] ?? null)))) {
+            throw ValidationException::withMessages([
+                'firstname' => 'Renseignez le prénom et le nom, ou un pseudo.',
+            ]);
+        }
+
         $data['lastname'] = isset($data['lastname']) ? mb_strtoupper(trim($data['lastname'])) : null;
         $data['firstname'] = isset($data['firstname']) ? trim($data['firstname']) : null;
+        $data['pseudo'] = isset($data['pseudo']) ? trim($data['pseudo']) : null;
         $data['company'] = isset($data['company']) ? trim($data['company']) : null;
         $data['email'] = isset($data['email']) ? trim($data['email']) : null;
 

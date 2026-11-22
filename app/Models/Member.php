@@ -10,6 +10,7 @@ class Member extends Model
         'morphy',
         'firstname',
         'lastname',
+        'pseudo',
         'company',
         'email',
         'subscription_date',

@@ -8,14 +8,23 @@
       <form @submit.prevent="saveMember" class="space-y-4" v-show="!submitted">
         <div v-if="!publicAccess">
           <label for="subdate" class="mb-1 block text-sm font-medium text-slate-700">Date d’adhésion</label>
-          <input
-            id="subdate"
-            ref="subdate"
-            type="date"
-            v-model="form.subscription_date"
-            @change="focusFilling"
-            class="w-full max-w-xs rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
-          />
+          <div class="flex items-center gap-2">
+            <input
+              id="subdate"
+              ref="subdate"
+              type="date"
+              v-model="form.subscription_date"
+              @change="focusFilling"
+              class="w-full max-w-xs rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
+            />
+            <button
+              type="button"
+              @click="setSubscriptionToday"
+              class="shrink-0 rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-600 transition hover:bg-slate-50"
+            >
+              Aujourd’hui
+            </button>
+          </div>
           <p v-if="errors.subscription_date" class="mt-1 text-sm text-red-600">{{ errors.subscription_date[0] }}</p>
         </div>
 
@@ -441,6 +450,11 @@ async function resetForm() {
   pseudoTip.value = false;
   emailTip.value = false;
   await refreshList().catch(() => {});
+  focusFilling();
+}
+
+function setSubscriptionToday() {
+  form.subscription_date = today;
   focusFilling();
 }
 

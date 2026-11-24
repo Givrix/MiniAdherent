@@ -332,6 +332,7 @@ async function refreshList(preserveCurrent = false) {
   if (editMode.value) return;
 
   const params = new URLSearchParams();
+  if (publicAccess) params.set('mode', 'self');
   for (const field of ['firstname', 'lastname', 'pseudo', 'company', 'email']) {
     if (form[field].trim() !== '') params.set(field, form[field].trim());
   }
@@ -408,7 +409,8 @@ async function saveMember() {
 
 async function selectMember(member) {
   if (editMode.value) return;
-  current.value = await fetchJson(`/api/members/${member.id}`);
+  const suffix = publicAccess ? '?mode=self' : '';
+  current.value = await fetchJson(`/api/members/${member.id}${suffix}`);
 }
 
 function editMember() {

@@ -20,6 +20,8 @@ class MemberController extends Controller
 
     public function search(Request $request): JsonResponse
     {
+        $publicView = $this->isPublicView($request);
+
         $query = Member::query()
             ->orderBy('lastname')
             ->orderBy('firstname')
@@ -35,7 +37,7 @@ class MemberController extends Controller
         }
 
         if (! $hasFilter) {
-            if (! auth()->check()) {
+            if ($publicView) {
                 return response()->json([]);
             }
 
@@ -44,7 +46,7 @@ class MemberController extends Controller
 
         $members = $query->get();
 
-        if (! auth()->check()) {
+        if ($publicView) {
             $members->transform(fn (Member $member) => $this->masked($member));
         }
 
@@ -79,9 +81,9 @@ class MemberController extends Controller
         ]);
     }
 
-    public function show(Member $member): JsonResponse
+    public function show(Request $request, Member $member): JsonResponse
     {
-        return response()->json(auth()->check() ? $member : $this->masked($member));
+        return response()->json($this->isPublicView($request) ? $this->masked($member) : $member);
     }
 
     public function update(Request $request, Member $member): JsonResponse
@@ -145,6 +147,11 @@ class MemberController extends Controller
             ->whereRaw('LOWER(email) = ?', [mb_strtolower(trim($email))])
             ->when($ignoreId, fn ($query) => $query->where('id', '!=', $ignoreId))
             ->exists();
+    }
+
+    private function isPublicView(Request $request): bool
+    {
+        return auth()->guest() || $request->query('mode') === 'self';
     }
 
     private function masked(Member $member): array

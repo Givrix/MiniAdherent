@@ -57,6 +57,31 @@ class MemberTest extends TestCase
             ->assertJsonPath('email', 'j**n@e*****e.org');
     }
 
+    public function test_the_self_registration_view_of_a_connected_user_only_sees_masked_results(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        Member::create(['morphy' => 'phy', 'firstname' => 'Jean', 'lastname' => 'DUPONT', 'pseudo' => 'jojo', 'email' => 'jean@exemple.org', 'subscription_date' => '2026-05-01', 'subscription_end' => '2027-05-01']);
+
+        $this->getJson('/api/members?lastname=dupont&mode=self')
+            ->assertOk()
+            ->assertJsonCount(1)
+            ->assertJsonPath('0.firstname', 'J**n')
+            ->assertJsonPath('0.email', 'j**n@e*****e.org');
+
+        $this->getJson('/api/members?mode=self')->assertOk()->assertJsonCount(0);
+
+        $member = Member::query()->where('lastname', 'DUPONT')->first();
+        $this->getJson("/api/members/{$member->id}?mode=self")
+            ->assertOk()
+            ->assertJsonPath('email', 'j**n@e*****e.org');
+
+        $this->getJson('/api/members?lastname=dupont')
+            ->assertOk()
+            ->assertJsonPath('0.firstname', 'Jean');
+    }
+
     public function test_it_creates_a_physical_member_with_a_one_year_subscription(): void
     {
         $user = User::factory()->create();

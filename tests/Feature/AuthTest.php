@@ -43,4 +43,13 @@ class AuthTest extends TestCase
             ->post('/login', ['email' => 'admin@exemple.org', 'password' => 'wrong'])
             ->assertSessionHasErrors('email');
     }
+
+    public function test_a_connected_user_can_switch_to_the_self_registration_view(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->get('/')->assertOk()->assertSee('data-public="auth"', false);
+        $this->actingAs($user)->get('/?mode=self')->assertOk()->assertSee('data-public="public"', false);
+        $this->get('/?mode=self')->assertOk()->assertSee('data-public="public"', false);
+    }
 }

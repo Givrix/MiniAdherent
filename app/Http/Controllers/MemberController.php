@@ -11,9 +11,11 @@ use Illuminate\Validation\ValidationException;
 
 class MemberController extends Controller
 {
-    public function page()
+    public function page(Request $request)
     {
-        return view('home');
+        $public = auth()->guest() || $request->query('mode') === 'self';
+
+        return view('home', ['public' => $public ? 'public' : 'auth']);
     }
 
     public function search(Request $request): JsonResponse
